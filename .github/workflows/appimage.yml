@@ -11,18 +11,22 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      # Checkout repository
       - uses: actions/checkout@v3
 
+      # Add Kubuntu PPA and install dependencies
       - name: Install dependencies
         run: |
-          sudo add-apt-repository universe
+          sudo add-apt-repository universe -y
+          sudo add-apt-repository ppa:kubuntu-ppa/backports -y
           sudo apt-get update
           sudo apt-get install -y \
             build-essential cmake git wget fuse3 \
             qtbase5-dev qttools5-dev qttools5-dev-tools \
             libkf5windowsystem-dev libkf5kdbusaddons-dev \
-            libbaloo5-dev libxcb1-dev libdbusmenu-qt5-dev libpulse-dev pkg-config
+            libbaloo-dev libxcb1-dev libdbusmenu-qt5-dev libpulse-dev pkg-config
 
+      # Build Menu
       - name: Build Menu
         run: |
           cd $GITHUB_WORKSPACE
@@ -31,15 +35,18 @@ jobs:
           make -j$(nproc)
           DESTDIR=$PWD/AppDir make install
 
+      # Download linuxdeployqt
       - name: Download linuxdeployqt
         run: |
           wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
           chmod +x linuxdeployqt-continuous-x86_64.AppImage
 
+      # Create AppImage
       - name: Create AppImage
         run: |
           ./linuxdeployqt-continuous-x86_64.AppImage build/AppDir/usr/share/applications/*.desktop -appimage
 
+      # Upload AppImage artifact
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
