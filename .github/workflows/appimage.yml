@@ -20,7 +20,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: kdeneon/plasma:unstable
-          options: "--privileged -v ${{ github.workspace }}:/workspace"
+          options: "--privileged --user root -v ${{ github.workspace }}:/workspace"
           run: |
             set -e
 
