@@ -31,7 +31,7 @@ jobs:
       # 3️⃣ Fetch missing KDE libs from Arch container
       - name: Fetch KDE libs from Arch
         run: |
-          docker run --rm -v $GITHUB_WORKSPACE:/mnt ubuntu/archlinux:latest /bin/bash -c "
+          docker run --rm -v $GITHUB_WORKSPACE:/mnt archlinux:latest /bin/bash -c "
             pacman -Sy --noconfirm kdbusaddons baloo
             mkdir -p /mnt/lib /mnt/include
             # Copy library files
