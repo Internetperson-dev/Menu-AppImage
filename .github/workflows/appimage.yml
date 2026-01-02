@@ -45,7 +45,6 @@ jobs:
               libkf5widgetsaddons-dev \
               libkf5windowsystem-dev \
               libkf5dbusaddons-dev \
-              libkf5statusnotifieritem-dev \
               libkf5i18n-dev \
               libkf5filemetadata-dev \
               wget \
