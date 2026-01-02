@@ -19,7 +19,7 @@ jobs:
       - name: Build and package in KDE Neon (Option A)
         uses: addnab/docker-run-action@v3
         with:
-          image: kdeneon/plasma:unstable
+          image: kdeneon/plasma:developer 
           options: "--privileged --user root -v ${{ github.workspace }}:/workspace"
           run: |
             set -e
