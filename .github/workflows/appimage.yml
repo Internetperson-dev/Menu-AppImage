@@ -1,4 +1,4 @@
-name: Build Menu AppImage (Hybrid Ubuntu + Arch)
+name: Build Menu AppImage
 
 on:
   push:
@@ -9,61 +9,47 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    env:
-      APPDIR: ${{ github.workspace }}/AppDir
-      LIBDIR: ${{ github.workspace }}/lib
-      INCLUDEDIR: ${{ github.workspace }}/include
 
     steps:
-      # 1️⃣ Checkout repository
+      # Checkout the repository
       - uses: actions/checkout@v3
 
-      # 2️⃣ Install Ubuntu dependencies
-      - name: Install Ubuntu dependencies
+      # Install dependencies including KDE backports for missing packages
+      - name: Install dependencies
         run: |
-          sudo add-apt-repository universe -y
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository universe
+          sudo add-apt-repository multiverse
+          sudo add-apt-repository -y ppa:kubuntu-ppa/backports
           sudo apt-get update
           sudo apt-get install -y \
             build-essential cmake git wget fuse3 \
-            qtbase5-dev qttools5-dev qttools5-dev-tools \
-            libkf5windowsystem-dev libdbusmenu-qt5-dev libpulse-dev pkg-config
+            qt5-default qttools5-dev qttools5-dev-tools \
+            libkf5windowsystem-dev libkf5kdbusaddons-dev \
+            libbaloo5-dev libxcb1-dev libdbusmenu-qt-dev libpulse-dev pkg-config
 
-      # 3️⃣ Fetch missing KDE libs from Arch container
-      - name: Fetch KDE libs from Arch
-        run: |
-          docker run --rm -v $GITHUB_WORKSPACE:/mnt archlinux:latest /bin/bash -c "
-            pacman -Sy --noconfirm kdbusaddons baloo
-            mkdir -p /mnt/lib /mnt/include
-            # Copy library files
-            cp /usr/lib/libKF5KDbusAddons.so* /mnt/lib/
-            cp /usr/lib/libBaloo*.so* /mnt/lib/
-            # Copy headers
-            cp -r /usr/include/kf5/KDbusAddons /mnt/include/
-            cp -r /usr/include/kf5/Baloo /mnt/include/
-          "
-
-      # 4️⃣ Build Menu on Ubuntu using copied libs
+      # Build Menu
       - name: Build Menu
         run: |
+          cd $GITHUB_WORKSPACE
           mkdir -p build && cd build
-          cmake .. \
-            -DCMAKE_PREFIX_PATH="$LIBDIR;$INCLUDEDIR" \
-            -DCMAKE_INSTALL_PREFIX=/usr
+          cmake ..
           make -j$(nproc)
-          DESTDIR=$APPDIR make install
+          DESTDIR=$PWD/AppDir make install
 
-      # 5️⃣ Download linuxdeployqt AppImage
+      # Download linuxdeployqt
       - name: Download linuxdeployqt
         run: |
           wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
           chmod +x linuxdeployqt-continuous-x86_64.AppImage
 
-      # 6️⃣ Create AppImage
+      # Create AppImage
       - name: Create AppImage
         run: |
-          ./linuxdeployqt-continuous-x86_64.AppImage $APPDIR/usr/share/applications/*.desktop -appimage
+          ./linuxdeployqt-continuous-x86_64.AppImage build/AppDir/usr/share/applications/*.desktop -appimage
 
-      # 7️⃣ Upload AppImage artifact
+      # Upload AppImage
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
