@@ -29,7 +29,12 @@ jobs:
             ls -la
 
             echo "=== Installing build tools ==="
+
             apt update
+            apt install -y software-properties-common
+            add-apt-repository universe
+            apt update
+            
             apt install -y \
               build-essential \
               cmake \
