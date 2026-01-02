@@ -14,31 +14,37 @@ jobs:
       # 1) Checkout code
       - uses: actions/checkout@v3
 
-      # 2) Run build in KDE Neon Docker image
+      # 2) Run build in KDE Neon container
       - name: Build and package in KDE Neon
         uses: addnab/docker-run-action@v3
         with:
-          image: kdeneon/plasma:unstable   # Official KDE Neon Docker image
-          options: "--privileged"
+          image: kdeneon/plasma:unstable
+          options: "--privileged -v ${{ github.workspace }}:/mnt:cached"
           run: |
-            # Create and enter build dir
+            set -e
+
+            echo "Entering build directory..."
             mkdir -p /mnt/build && cd /mnt/build
 
-            # Configure
+            echo "Configuring with CMake..."
             cmake /mnt
 
-            # Build
+            echo "Building..."
             make -j$(nproc)
 
-            # Install into AppDir
+            echo "Installing to AppDir..."
+            mkdir -p AppDir/usr
             DESTDIR=$PWD/AppDir make install
 
-            # Download linuxdeployqt
+            echo "AppDir contents:"
+            find AppDir
+
+            echo "Downloading linuxdeployqt..."
             wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
             chmod +x linuxdeployqt-continuous-x86_64.AppImage
 
-            # Create AppImage
-            ./linuxdeployqt-continuous-x86_64.AppImage AppDir/usr/share/applications/*.desktop -appimage
+            echo "Creating AppImage..."
+            ./linuxdeployqt-continuous-x86_64.AppImage --appimage-extract-and-run AppDir/usr/share/applications/*.desktop -appimage
 
       # 3) Upload artifact
       - name: Upload AppImage artifact
