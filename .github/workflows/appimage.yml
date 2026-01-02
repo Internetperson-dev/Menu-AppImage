@@ -41,6 +41,7 @@ jobs:
               libqt5x11extras5-dev \
               libkf5dbusaddons-dev \
               libkf5windowsystem-dev \
+              libkf5baloo-dev \
               wget \
               file \
               patchelf
