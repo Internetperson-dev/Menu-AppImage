@@ -1,4 +1,4 @@
-name: Build Menu_Ubuntu.zip
+name: Build Menu AppImage
 on:
   push:
     branches:
@@ -44,24 +44,46 @@ jobs:
             libprocps-dev \
             make \
             pkg-config \
-            libicu-dev
+            libicu-dev \
+            wget \
+            patchelf \
+            file \
+            zip
 
-      - name: Build Menu_Ubuntu.zip
+      - name: Build project
         run: |
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-          make DESTDIR=. install
-          find System/Menu.app/
-          cd ./System/
-          zip --symlinks -r ../Menu_Ubuntu.zip Menu.app/
+          make DESTDIR=AppDir install
 
-      - name: Upload Menu_Ubuntu.zip
+      - name: Prepare AppDir for linuxdeployqt
+        run: |
+          cd build/AppDir
+          # Ensure your .desktop file exists
+          if [ ! -f usr/share/applications/*.desktop ]; then
+            echo "No .desktop file found! Ensure your install step installs it." >&2
+            exit 1
+          fi
+
+      - name: Download linuxdeployqt
+        run: |
+          wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod +x linuxdeployqt-continuous-x86_64.AppImage
+
+      - name: Create AppImage
+        run: |
+          cd build/AppDir
+          ../linuxdeployqt-continuous-x86_64.AppImage \
+            usr/share/applications/*.desktop \
+            -appimage
+
+      - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Menu_Ubuntu.zip
-          path: build/Menu_Ubuntu.zip
-          
+          name: Menu.AppImage
+          path: build/AppDir/*.AppImage
+
       - name: Create GitHub Release using Continuous Release Manager
         if: github.event_name == 'push'
         env:
@@ -73,13 +95,13 @@ jobs:
           RELEASE_ID=$(./continuous-release-manager-linux)
           echo "RELEASE_ID=${RELEASE_ID}" >> $GITHUB_ENV
 
-      - name: Upload to GitHub Release
+      - name: Upload AppImage to GitHub Release
         if: github.event_name == 'push'
         uses: xresloader/upload-to-github-release@v1.3.12
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          file: "build/*zip"
+          file: "build/AppDir/*.AppImage"
           draft: false
           verbose: true
           branches: main
