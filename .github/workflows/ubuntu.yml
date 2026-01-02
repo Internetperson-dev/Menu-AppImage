@@ -1,87 +1,52 @@
-name: Build Menu_Ubuntu.zip
+name: Build Menu AppImage
+
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      # 1️⃣ Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Install dependencies
+      # 2️⃣ Install dependencies
+      - name: Install build dependencies
         run: |
-          sudo add-apt-repository universe
           sudo apt-get update
-          sudo apt-get install -y \
-            cmake \
-            g++ \
-            qtbase5-dev \
-            qttools5-dev \
-            libqt5svg5-dev \
-            libqt5x11extras5-dev \
-            libkf5windowsystem-dev \
-            libkf5globalaccel-dev \
-            baloo-kf5-dev \
-            libxtst-dev \
-            libxdamage-dev \
-            libxcomposite-dev \
-            libxrender-dev \
-            libxcb1-dev \
-            libx11-xcb-dev \
-            libxcb-damage0-dev \
-            libxcb-util-dev \
-            libxcb-ewmh-dev \
-            libdbusmenu-qt5-dev \
-            libkf5dbusaddons-dev \
-            libpulse-dev \
-            libqalculate-dev \
-            qtdeclarative5-dev \
-            libprocps-dev \
-            make \
-            pkg-config \
-            libicu-dev
+          sudo apt-get install -y build-essential cmake git wget fuse3 \
+            qt5-default qttools5-dev qttools5-dev-tools \
+            libkf5windowsystem-dev libkf5kdbusaddons-dev \
+            libbaloo-dev libxcb1-dev libdbusmenu-qt-dev libpulse-dev pkg-config
 
-      - name: Build Menu_Ubuntu.zip
+      # 3️⃣ Build Menu
+      - name: Build Menu
         run: |
-          mkdir build ; cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cd $GITHUB_WORKSPACE
+          mkdir -p build && cd build
+          cmake ..
           make -j$(nproc)
-          make DESTDIR=. install
-          find System/Menu.app/
-          cd ./System/
-          zip --symlinks -r ../Menu_Ubuntu.zip Menu.app/
+          DESTDIR=$PWD/AppDir make install
 
-      - name: Upload Menu_Ubuntu.zip
-        uses: actions/upload-artifact@v2
-        with:
-          name: Menu_Ubuntu.zip
-          path: build/Menu_Ubuntu.zip
-          
-      - name: Create GitHub Release using Continuous Release Manager
-        if: github.event_name == 'push'  # Only run for push events, not pull requests
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 4️⃣ Download linuxdeployqt AppImage
+      - name: Download linuxdeployqt
         run: |
-              curl -L -o continuous-release-manager-linux https://github.com/probonopd/continuous-release-manager/releases/download/continuous/continuous-release-manager-linux
-              chmod +x continuous-release-manager-linux
-              ./continuous-release-manager-linux
-              RELEASE_ID=$(./continuous-release-manager-linux)
-              echo "RELEASE_ID=${RELEASE_ID}" >> $GITHUB_ENV
+          wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod +x linuxdeployqt-continuous-x86_64.AppImage
 
-      - name: Upload to GitHub Release
-        if: github.event_name == 'push'  # Only run for push events, not pull requests
-        uses: xresloader/upload-to-github-release@v1.3.12
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 5️⃣ Create AppImage
+      - name: Create AppImage
+        run: |
+          ./linuxdeployqt-continuous-x86_64.AppImage build/AppDir/usr/share/applications/*.desktop -appimage
+
+      # 6️⃣ Upload AppImage artifact
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
         with:
-          file: "build/*zip"
-          draft: false
-          verbose: true
-          branches: main
-          tag_name: continuous
-          release_id: ${{ env.RELEASE_ID }}
+          name: Menu-AppImage
+          path: '*.AppImage'
