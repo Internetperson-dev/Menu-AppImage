@@ -57,14 +57,13 @@ jobs:
           make -j$(nproc)
           make DESTDIR=AppDir install
 
-      - name: Prepare AppDir for linuxdeployqt
-        run: |
-          cd build/AppDir
-          # Ensure your .desktop file exists
-          if [ ! -f usr/share/applications/*.desktop ]; then
-            echo "No .desktop file found! Ensure your install step installs it." >&2
-            exit 1
-          fi
+          # Patch: ensure .desktop file exists
+          mkdir -p AppDir/usr/share/applications
+          cp ../Menu.desktop AppDir/usr/share/applications/
+
+          # Patch: ensure icon exists
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          cp ../menu.png AppDir/usr/share/icons/hicolor/256x256/apps/
 
       - name: Download linuxdeployqt
         run: |
@@ -75,7 +74,7 @@ jobs:
         run: |
           cd build/AppDir
           ../linuxdeployqt-continuous-x86_64.AppImage \
-            usr/share/applications/*.desktop \
+            usr/share/applications/Menu.desktop \
             -appimage
 
       - name: Upload AppImage artifact
