@@ -1,58 +1,33 @@
-name: Build Menu AppImage
+- name: Set up Arch Linux container and build
+  uses: addnab/docker-run-action@v3
+  with:
+    image: archlinux:latest
+    options: --privileged
+    workspace: ${{ github.workspace }}
+    run: |
+      # Update pacman and install dependencies
+      pacman -Sy --noconfirm
+      pacman -S --noconfirm base-devel cmake git wget fuse3 \
+        qt5-base qt5-tools qt5-svg qt5-x11extras \
+        kwindowsystem baloo libxtst libxdamage libxcomposite libxrender libxcb \
+        xcb-util libdbusmenu-qt5 kdbusaddons libpulse pkgconf icu
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+      cd $GITHUB_WORKSPACE
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+      # Build Menu
+      mkdir -p build && cd build
+      cmake ..
+      make -j$(nproc)
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      # Install into AppDir for linuxdeployqt
+      DESTDIR=$PWD/AppDir make install
 
-    - name: Set up Arch Linux container and build
-      uses: addnab/docker-run-action@v3
-      with:
-        image: archlinux:latest
-        options: --privileged
-        workspace: ${{ github.workspace }}
-        run: |
-          # Update pacman and install all dependencies
-          pacman -Sy --noconfirm
-          pacman -S --noconfirm base-devel cmake git wget \
-            qt5-base qt5-tools qt5-svg qt5-x11extras \
-            kwindowsystem baloo libxtst libxdamage libxcomposite libxrender libxcb \
-            xcb-util libdbusmenu-qt5 kdbusaddons libpulse pkgconf icu
+      # Download linuxdeployqt AppImage
+      wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+      chmod +x linuxdeployqt-continuous-x86_64.AppImage
 
-          # Go to the mounted GitHub repo
-          cd $GITHUB_WORKSPACE
+      # Create AppImage (no -output option)
+      ./linuxdeployqt-continuous-x86_64.AppImage AppDir/usr/share/applications/*.desktop -appimage
 
-          # Build Menu
-          mkdir -p build && cd build
-          cmake ..
-          make -j$(nproc)
-
-          # Install into AppDir for linuxdeployqt
-          DESTDIR=$PWD/AppDir make install
-
-          # Download linuxdeployqt AppImage
-          wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
-          chmod +x linuxdeployqt-continuous-x86_64.AppImage
-
-          # Create AppImage
-          ./linuxdeployqt-continuous-x86_64.AppImage AppDir/usr/share/applications/*.desktop \
-            -appimage \
-            -output appimage
-
-          # Move AppImage to GitHub Actions workspace
-          mv *.AppImage $GITHUB_WORKSPACE
-
-    - name: Upload AppImage artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Menu-AppImage
-        path: '*.AppImage'
+      # Move AppImage to GitHub Actions workspace
+      mv *.AppImage $GITHUB_WORKSPACE
