@@ -1,110 +1,87 @@
-name: Build Menu AppImage
-
+name: Build Menu_Ubuntu.zip
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
-      # 1) Checkout repository
-      - name: Checkout source
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2) Build & package inside KDE Neon container
-      - name: Build and package in KDE Neon (Option A)
-        uses: addnab/docker-run-action@v3
+      - name: Install dependencies
+        run: |
+          sudo add-apt-repository universe
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            g++ \
+            qtbase5-dev \
+            qttools5-dev \
+            libqt5svg5-dev \
+            libqt5x11extras5-dev \
+            libkf5windowsystem-dev \
+            libkf5globalaccel-dev \
+            baloo-kf5-dev \
+            libxtst-dev \
+            libxdamage-dev \
+            libxcomposite-dev \
+            libxrender-dev \
+            libxcb1-dev \
+            libx11-xcb-dev \
+            libxcb-damage0-dev \
+            libxcb-util-dev \
+            libxcb-ewmh-dev \
+            libdbusmenu-qt5-dev \
+            libkf5dbusaddons-dev \
+            libpulse-dev \
+            libqalculate-dev \
+            qtdeclarative5-dev \
+            libprocps-dev \
+            make \
+            pkg-config \
+            libicu-dev
+
+      - name: Build Menu_Ubuntu.zip
+        run: |
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          make DESTDIR=. install
+          find System/Menu.app/
+          cd ./System/
+          zip --symlinks -r ../Menu_Ubuntu.zip Menu.app/
+
+      - name: Upload Menu_Ubuntu.zip
+        uses: actions/upload-artifact@v3
         with:
-          image: kdeneon/plasma:developer 
-          options: "--privileged --user root -v ${{ github.workspace }}:/workspace"
-          run: |
-            set -e
+          name: Menu_Ubuntu.zip
+          path: build/Menu_Ubuntu.zip
+          
+      - name: Create GitHub Release using Continuous Release Manager
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -L -o continuous-release-manager-linux https://github.com/probonopd/continuous-release-manager/releases/download/continuous/continuous-release-manager-linux
+          chmod +x continuous-release-manager-linux
+          ./continuous-release-manager-linux
+          RELEASE_ID=$(./continuous-release-manager-linux)
+          echo "RELEASE_ID=${RELEASE_ID}" >> $GITHUB_ENV
 
-            echo "=== Workspace ==="
-            cd /workspace
-            ls -la
-
-            echo "=== Installing build tools ==="
-            apt update
-            apt install -y \
-              build-essential \
-              cmake \
-              extra-cmake-modules \
-              qtbase5-dev \
-              qttools5-dev \
-              qttools5-dev-tools \
-              libqt5svg5-dev \
-              libqt5x11extras5-dev \
-              libkf5coreaddons-dev \
-              libkf5config-dev \
-              libkf5configwidgets-dev \
-              libkf5widgetsaddons-dev \
-              libkf5windowsystem-dev \
-              libkf5dbusaddons-dev \
-              libkf5i18n-dev \
-              libkf5filemetadata-dev \
-              wget \
-              git \
-              ninja-build \
-              pkg-config \
-              patchelf \
-              file
-
-
-
-              cd /tmp
-              git clone https://invent.kde.org/frameworks/baloo.git
-              cd baloo
-              git checkout master   # match KDE Neon / Plasma version
-              mkdir build && cd build
-
-              cmake -G Ninja \
-            -DCMAKE_INSTALL_PREFIX=/usr \
-            -DCMAKE_BUILD_TYPE=Release \
-            ..
-            ninja
-            ninja install
-            ls /usr/lib/x86_64-linux-gnu/cmake/KF5Baloo/KF5BalooConfig.cmake
-
-            cd /
-
-
-
-            echo "=== Creating build directory ==="
-            mkdir -p build
-            cd build
-
-            echo "=== Configuring with CMake ==="
-            cmake ..
-
-            echo "=== Building ==="
-            make -j$(nproc)
-
-            echo "=== Installing into AppDir ==="
-            make install DESTDIR=AppDir
-
-            echo "=== AppDir layout ==="
-            find AppDir
-
-            echo "=== Downloading linuxdeployqt ==="
-            wget -q https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
-            chmod +x linuxdeployqt-continuous-x86_64.AppImage
-
-            echo "=== Creating AppImage ==="
-            ./linuxdeployqt-continuous-x86_64.AppImage \
-              AppDir/usr/share/applications/*.desktop \
-              -appimage
-
-            echo "=== Build complete ==="
-            ls -lh *.AppImage
-
-      # 3) Upload resulting AppImage
-      - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload to GitHub Release
+        if: github.event_name == 'push'
+        uses: xresloader/upload-to-github-release@v1.3.12
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: Menu-AppImage
-          path: '*.AppImage'
+          file: "build/*zip"
+          draft: false
+          verbose: true
+          branches: main
+          tag_name: continuous
+          release_id: ${{ env.RELEASE_ID }}
