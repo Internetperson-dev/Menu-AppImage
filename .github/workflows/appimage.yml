@@ -29,12 +29,7 @@ jobs:
             ls -la
 
             echo "=== Installing build tools ==="
-
             apt update
-            apt install -y software-properties-common
-            add-apt-repository universe
-            apt update
-            
             apt install -y \
               build-essential \
               cmake \
@@ -44,12 +39,41 @@ jobs:
               qttools5-dev-tools \
               libqt5svg5-dev \
               libqt5x11extras5-dev \
-              libkf5dbusaddons-dev \
+              libkf5coreaddons-dev \
+              libkf5config-dev \
+              libkf5configwidgets-dev \
+              libkf5widgetsaddons-dev \
               libkf5windowsystem-dev \
-              libkf5baloo-dev \
+              libkf5dbusaddons-dev \
+              libkf5statusnotifieritem-dev \
+              libkf5i18n-dev \
+              libkf5filemetadata-dev \
               wget \
-              file \
-              patchelf
+              git \
+              ninja-build \
+              pkg-config \
+              patchelf \
+              file
+
+
+
+              cd /tmp
+              git clone https://invent.kde.org/frameworks/baloo.git
+              cd baloo
+              git checkout master   # match KDE Neon / Plasma version
+              mkdir build && cd build
+
+              cmake -G Ninja \
+            -DCMAKE_INSTALL_PREFIX=/usr \
+            -DCMAKE_BUILD_TYPE=Release \
+            ..
+            ninja
+            ninja install
+            ls /usr/lib/x86_64-linux-gnu/cmake/KF5Baloo/KF5BalooConfig.cmake
+
+            cd /
+
+
 
             echo "=== Creating build directory ==="
             mkdir -p build
