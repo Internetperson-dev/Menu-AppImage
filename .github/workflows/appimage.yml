@@ -11,42 +11,66 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Checkout code
-      - uses: actions/checkout@v3
+      # 1) Checkout repository
+      - name: Checkout source
+        uses: actions/checkout@v3
 
-      # 2) Run build in KDE Neon container
-      - name: Build and package in KDE Neon
+      # 2) Build & package inside KDE Neon container
+      - name: Build and package in KDE Neon (Option A)
         uses: addnab/docker-run-action@v3
         with:
           image: kdeneon/plasma:unstable
-          options: "--privileged -v ${{ github.workspace }}:/mnt:cached"
+          options: "--privileged -v ${{ github.workspace }}:/workspace"
           run: |
             set -e
 
-            echo "Entering build directory..."
-            mkdir -p /mnt/build && cd /mnt/build
+            echo "=== Workspace ==="
+            cd /workspace
+            ls -la
 
-            echo "Configuring with CMake..."
-            cmake /mnt
+            echo "=== Installing build tools ==="
+            apt update
+            apt install -y \
+              build-essential \
+              cmake \
+              extra-cmake-modules \
+              qtbase5-dev \
+              qttools5-dev \
+              qttools5-dev-tools \
+              libqt5svg5-dev \
+              wget \
+              file \
+              patchelf
 
-            echo "Building..."
+            echo "=== Creating build directory ==="
+            mkdir -p build
+            cd build
+
+            echo "=== Configuring with CMake ==="
+            cmake ..
+
+            echo "=== Building ==="
             make -j$(nproc)
 
-            echo "Installing to AppDir..."
-            mkdir -p AppDir/usr
-            DESTDIR=$PWD/AppDir make install
+            echo "=== Installing into AppDir ==="
+            make install DESTDIR=AppDir
 
-            echo "AppDir contents:"
+            echo "=== AppDir layout ==="
             find AppDir
 
-            echo "Downloading linuxdeployqt..."
-            wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+            echo "=== Downloading linuxdeployqt ==="
+            wget -q https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
             chmod +x linuxdeployqt-continuous-x86_64.AppImage
 
-            echo "Creating AppImage..."
-            ./linuxdeployqt-continuous-x86_64.AppImage --appimage-extract-and-run AppDir/usr/share/applications/*.desktop -appimage
+            echo "=== Creating AppImage ==="
+            ./linuxdeployqt-continuous-x86_64.AppImage \
+              AppDir/usr/share/applications/*.desktop \
+              -appimage
 
-      # 3) Upload artifact
+            echo "=== Build complete ==="
+            ls -lh *.AppImage
+
+      # 3) Upload resulting AppImage
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
