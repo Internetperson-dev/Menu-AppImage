@@ -14,22 +14,17 @@ jobs:
       # 1) Checkout code
       - uses: actions/checkout@v3
 
-      # 2) Build custom KDE Neon image
-      - name: Build KDE Neon image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: .github/docker/Dockerfile
-          push: false
-          tags: menu-kde-neon:ci
-
-      # 3) Run build in custom KDE Neon image
-      - name: Build and package
+      # 2) Run build in existing KDE Neon image
+      - name: Build and package in KDE Neon
         uses: addnab/docker-run-action@v3
         with:
-          image: menu-kde-neon:ci
+          image: neon/kde:latest   # Existing KDE Neon image
           options: "--privileged"
           run: |
+            # Install any extra dev tools we might need
+            apt-get update && apt-get install -y \
+              build-essential cmake git wget fuse3 pkg-config
+
             # Create and enter build dir
             mkdir -p /mnt/build && cd /mnt/build
 
@@ -49,7 +44,7 @@ jobs:
             # Create AppImage
             ./linuxdeployqt-continuous-x86_64.AppImage AppDir/usr/share/applications/*.desktop -appimage
 
-      # 4) Upload artifact
+      # 3) Upload artifact
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
