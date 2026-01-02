@@ -15,14 +15,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Install dependencies
-      - name: Install build dependencies
+      - name: Install dependencies
         run: |
+          sudo add-apt-repository universe
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake git wget fuse3 \
-            qt5-default qttools5-dev qttools5-dev-tools \
+          sudo apt-get install -y \
+            build-essential cmake git wget fuse3 \
+            qtbase5-dev qttools5-dev qttools5-dev-tools \
             libkf5windowsystem-dev libkf5kdbusaddons-dev \
-            libbaloo-dev libxcb1-dev libdbusmenu-qt-dev libpulse-dev pkg-config
+            libbaloo5-dev libxcb1-dev libdbusmenu-qt5-dev libpulse-dev pkg-config
 
       # 3️⃣ Build Menu
       - name: Build Menu
