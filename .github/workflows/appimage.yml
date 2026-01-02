@@ -48,7 +48,8 @@ jobs:
             wget \
             patchelf \
             file \
-            zip
+            zip \
+            imagemagick
 
       - name: Build project
         run: |
@@ -57,13 +58,26 @@ jobs:
           make -j$(nproc)
           make DESTDIR=AppDir install
 
-          # Patch: ensure .desktop file exists
-          mkdir -p AppDir/usr/share/applications
-          cp ../Menu.desktop AppDir/usr/share/applications/
+      - name: Create temporary .desktop file and icon
+        run: |
+          # Create AppDir directories
+          mkdir -p build/AppDir/usr/share/applications
+          mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
 
-          # Patch: ensure icon exists
-          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
-          cp ../menu.png AppDir/usr/share/icons/hicolor/256x256/apps/
+          # Create minimal Menu.desktop
+          cat > build/AppDir/usr/share/applications/Menu.desktop <<EOL
+[Desktop Entry]
+Type=Application
+Name=Menu
+Exec=System/Menu.app/Menu
+Icon=menu
+Comment=Menu application
+Categories=Utility;
+Terminal=false
+EOL
+
+          # Create a blank placeholder icon
+          convert -size 256x256 xc:none build/AppDir/usr/share/icons/hicolor/256x256/apps/menu.png || true
 
       - name: Download linuxdeployqt
         run: |
