@@ -14,20 +14,11 @@ jobs:
       # 1) Checkout code
       - uses: actions/checkout@v3
 
-      # 2) Build custom KDE Neon image
-      - name: Build KDE Neon image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: .github/docker/Dockerfile
-          push: false
-          tags: menu-kde-neon:ci
-
-      # 3) Run build in custom KDE Neon image
-      - name: Build and package
+      # 2) Run build in KDE Neon Docker image
+      - name: Build and package in KDE Neon
         uses: addnab/docker-run-action@v3
         with:
-          image: menu-kde-neon:ci
+          image: kdeneon/plasma:unstable   # Official KDE Neon Docker image
           options: "--privileged"
           run: |
             # Create and enter build dir
@@ -42,14 +33,14 @@ jobs:
             # Install into AppDir
             DESTDIR=$PWD/AppDir make install
 
-            # Get linuxdeployqt
+            # Download linuxdeployqt
             wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
             chmod +x linuxdeployqt-continuous-x86_64.AppImage
 
             # Create AppImage
             ./linuxdeployqt-continuous-x86_64.AppImage AppDir/usr/share/applications/*.desktop -appimage
 
-      # 4) Upload artifact
+      # 3) Upload artifact
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
