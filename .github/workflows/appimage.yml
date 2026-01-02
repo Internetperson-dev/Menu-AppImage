@@ -57,7 +57,7 @@ jobs:
           zip --symlinks -r ../Menu_Ubuntu.zip Menu.app/
 
       - name: Upload Menu_Ubuntu.zip
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Menu_Ubuntu.zip
           path: build/Menu_Ubuntu.zip
