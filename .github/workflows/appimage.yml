@@ -11,24 +11,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout source
       - uses: actions/checkout@v3
 
-      # Step 2: Run Alpine container
       - name: Build in Alpine
         run: |
           docker run --rm -v $GITHUB_WORKSPACE:/mnt -w /mnt alpine:3.18 /bin/sh -c "
             # Install build dependencies
-            apk add --no-cache \
-              bash git cmake clang make musl-dev alpine-sdk \
+            apk add --no-cache bash git cmake alpine-sdk \
               qt5-qtbase-dev qt5-qttools-dev \
               kdbusaddons-dev baloo-dev kwindowsystem-dev \
-              xcb-util-wm-dev libdbusmenu-qt-dev procps-dev
+              xcb-util-wm-dev libdbusmenu-qt-dev
 
-            # Create build directory
+            # Build the project
             mkdir -p build && cd build
-
-            # Configure and build
             cmake ..
             make -j\$(nproc)
             DESTDIR=\$PWD/AppDir make install
@@ -37,11 +32,11 @@ jobs:
             wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
             chmod +x linuxdeployqt-continuous-x86_64.AppImage
 
-            # Create AppImage
-            ./linuxdeployqt-continuous-x86_64.AppImage AppDir/usr/share/applications/*.desktop -appimage
+            # Extract AppImage contents (FUSE-free)
+            ./linuxdeployqt-continuous-x86_64.AppImage --appimage-extract
+            ./squashfs-root/AppRun AppDir/usr/share/applications/*.desktop -appimage
           "
 
-      # Step 3: Upload resulting AppImage
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
