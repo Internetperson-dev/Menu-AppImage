@@ -18,7 +18,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
           build-essential cmake git wget fuse3 \
-          qtbase5-dev qttools5-dev qttools5-dev-tools libqt5x11extras5-dev \
+          qtbase5-dev qttools5-dev qttools5-dev-tools libqt5x11extras5-dev libkf5dbusaddons-dev \
           libkf5windowsystem-dev libkf5coreaddons-dev \
           libxcb1-dev libpulse-dev pkg-config
 
