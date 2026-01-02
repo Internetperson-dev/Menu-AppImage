@@ -11,40 +11,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Checkout code
+      # 1) Checkout source
       - uses: actions/checkout@v3
 
-      # 2) Run build in existing KDE Neon image
-      - name: Build and package in KDE Neon
+      # 2) Run the build inside KDE Neon Plasma Docker image
+      - name: Build and package inside KDE Neon
         uses: addnab/docker-run-action@v3
         with:
-          image: neon/kde:latest   # Existing KDE Neon image
-          options: "--privileged"
+          image: kdeneon/plasma:unstable
+          options: "--privileged" # needed for FUSE/AppImage
           run: |
-            # Install any extra dev tools we might need
-            apt-get update && apt-get install -y \
-              build-essential cmake git wget fuse3 pkg-config
+            # Update and install any extra dev packages (if needed)
+            sudo apt-get update
+            sudo apt-get install -y \
+              build-essential cmake git wget pkg-config \
+              qttools5-dev-tools qttools5-dev \
+              libkf5windowsystem-dev libkf5coreaddons-dev \
+              libkf5dbusaddons-dev libbaloo5-dev libdbusmenu-qt-dev \
+              libxcb1-dev libx11-dev libpulse-dev
 
-            # Create and enter build dir
+            # Prepare build dir
             mkdir -p /mnt/build && cd /mnt/build
 
-            # Configure
+            # Configure & build
             cmake /mnt
-
-            # Build
             make -j$(nproc)
 
             # Install into AppDir
             DESTDIR=$PWD/AppDir make install
 
-            # Get linuxdeployqt
+            # Download linuxdeployqt
             wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
             chmod +x linuxdeployqt-continuous-x86_64.AppImage
 
-            # Create AppImage
+            # Build AppImage
             ./linuxdeployqt-continuous-x86_64.AppImage AppDir/usr/share/applications/*.desktop -appimage
 
-      # 3) Upload artifact
+      # 3) Upload AppImage
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
