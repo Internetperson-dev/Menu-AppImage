@@ -1,4 +1,5 @@
 name: Build Menu AppImage
+
 on:
   push:
     branches:
@@ -31,7 +32,8 @@ jobs:
 
       - name: Build project
         run: |
-          mkdir -p build && cd build
+          mkdir -p build
+          cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
           make DESTDIR=AppDir install
@@ -45,20 +47,19 @@ jobs:
           mkdir -p build/AppDir/usr/share/applications
           mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
 
-          # Minimal .desktop file (Heredoc must start at column 0)
-          cat > build/AppDir/usr/share/applications/Menu.desktop <<EOL
-[Desktop Entry]
-Type=Application
-Name=Menu
-Exec=Menu
-Icon=menu
-Comment=Menu application
-Categories=Utility;
-Terminal=false
-EOL
+          printf "[Desktop Entry]\n\
+Type=Application\n\
+Name=Menu\n\
+Exec=Menu\n\
+Icon=menu\n\
+Comment=Menu application\n\
+Categories=Utility;\n\
+Terminal=false\n" \
+          > build/AppDir/usr/share/applications/Menu.desktop
 
           # Placeholder icon
-          convert -size 256x256 xc:none build/AppDir/usr/share/icons/hicolor/256x256/apps/menu.png || true
+          convert -size 256x256 xc:none \
+            build/AppDir/usr/share/icons/hicolor/256x256/apps/menu.png || true
 
       - name: Download linuxdeployqt
         run: |
