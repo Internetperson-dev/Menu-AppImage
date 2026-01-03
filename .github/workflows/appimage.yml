@@ -37,7 +37,7 @@ jobs:
           mkdir build && cd build
           cmake ..
           make -j$(nproc)
-          # Copy the plugin into AppDir for packaging
+          # Copy plugin into AppDir path for packaging
           mkdir -p ../../build/AppDir/usr/lib/qt/plugins/platformthemes
           cp panda.so ../../build/AppDir/usr/lib/qt/plugins/platformthemes/
 
@@ -58,7 +58,7 @@ jobs:
           mkdir -p build/AppDir/usr/share/applications
           mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
 
-          # Create minimal .desktop file
+          # Minimal .desktop file (heredoc at column 0)
           cat > build/AppDir/usr/share/applications/Menu.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
@@ -70,7 +70,7 @@ Categories=Utility;
 Terminal=false
 EOF
 
-          # Create placeholder icon
+          # Placeholder icon
           convert -size 256x256 xc:none build/AppDir/usr/share/icons/hicolor/256x256/apps/menu.png || true
 
       - name: Download linuxdeployqt
