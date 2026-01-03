@@ -40,7 +40,7 @@ jobs:
           make -j$(nproc)
           # Copy plugin into AppDir path for packaging
           mkdir -p ../../build/AppDir/usr/lib/qt/plugins/platformthemes
-          cp panda.so ../../build/AppDir/usr/lib/qt/plugins/platformthemes/
+          cp libpanda-qtplugin.so ../../build/AppDir/usr/lib/qt/plugins/platformthemes/
 
       - name: Build Menu project
         run: |
