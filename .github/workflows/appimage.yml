@@ -38,7 +38,6 @@ jobs:
           make -j$(nproc)
           make DESTDIR=AppDir install
 
-          # Move the binary to usr/bin so linuxdeployqt can find it
           mkdir -p AppDir/usr/bin
           cp System/Menu.app/Menu AppDir/usr/bin/Menu
 
@@ -47,17 +46,16 @@ jobs:
           mkdir -p build/AppDir/usr/share/applications
           mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
 
-          printf "[Desktop Entry]\n\
-Type=Application\n\
-Name=Menu\n\
-Exec=Menu\n\
-Icon=menu\n\
-Comment=Menu application\n\
-Categories=Utility;\n\
-Terminal=false\n" \
-          > build/AppDir/usr/share/applications/Menu.desktop
+          DESKTOP_FILE=build/AppDir/usr/share/applications/Menu.desktop
+          echo "[Desktop Entry]" >  "$DESKTOP_FILE"
+          echo "Type=Application" >> "$DESKTOP_FILE"
+          echo "Name=Menu" >> "$DESKTOP_FILE"
+          echo "Exec=Menu" >> "$DESKTOP_FILE"
+          echo "Icon=menu" >> "$DESKTOP_FILE"
+          echo "Comment=Menu application" >> "$DESKTOP_FILE"
+          echo "Categories=Utility;" >> "$DESKTOP_FILE"
+          echo "Terminal=false" >> "$DESKTOP_FILE"
 
-          # Placeholder icon
           convert -size 256x256 xc:none \
             build/AppDir/usr/share/icons/hicolor/256x256/apps/menu.png || true
 
