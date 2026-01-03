@@ -32,6 +32,15 @@ jobs:
 
       - name: Build panda Qt plugin
         run: |
+
+          
+          git clone https://github.com/helloSystem/Qt5ThemeSupport.git
+          cd Qt5ThemeSupport
+          mkdir build && cd build
+          cmake ..
+          make -j$(nproc)
+          sudo make install
+
           git clone https://github.com/helloSystem/QtPlugin.git
           cd QtPlugin
           mkdir build && cd build
