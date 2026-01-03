@@ -29,7 +29,7 @@ jobs:
             libpulse-dev libqalculate-dev qtdeclarative5-dev \
             libprocps-dev make pkg-config libicu-dev wget git \
             imagemagick zip patchelf libqt5xdgiconloader-dev qtbase5-private-dev extra-cmake-modules \
-            libqt5multimediawidgets5-dev libqt5multimedia5-plugins
+            qtmultimedia5-dev
 
       - name: Build panda Qt plugin
         run: |
