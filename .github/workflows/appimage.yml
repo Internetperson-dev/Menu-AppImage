@@ -39,7 +39,7 @@ jobs:
           make DESTDIR=AppDir install
 
           mkdir -p AppDir/usr/bin
-          cp System/Menu.app/Menu AppDir/usr/bin/Menu
+          cp AppDir/System/Menu.app/Menu AppDir/usr/bin/Menu
 
       - name: Create temporary .desktop file and icon
         run: |
