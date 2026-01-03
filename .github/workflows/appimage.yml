@@ -36,7 +36,7 @@ jobs:
           make -j$(nproc)
           make DESTDIR=AppDir install
 
-          # Move the binary so linuxdeployqt can find it
+          # Move the binary to usr/bin so linuxdeployqt can find it
           mkdir -p AppDir/usr/bin
           cp System/Menu.app/Menu AppDir/usr/bin/Menu
 
@@ -45,7 +45,7 @@ jobs:
           mkdir -p build/AppDir/usr/share/applications
           mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
 
-          # Minimal .desktop file (no leading spaces!)
+          # Minimal .desktop file (Heredoc must start at column 0)
           cat > build/AppDir/usr/share/applications/Menu.desktop <<EOL
 [Desktop Entry]
 Type=Application
