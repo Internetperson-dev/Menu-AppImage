@@ -28,9 +28,20 @@ jobs:
             libxcb-ewmh-dev libdbusmenu-qt5-dev libkf5dbusaddons-dev \
             libpulse-dev libqalculate-dev qtdeclarative5-dev \
             libprocps-dev make pkg-config libicu-dev wget \
-            patchelf file zip imagemagick
+            patchelf file zip imagemagick git
 
-      - name: Build project
+      - name: Build panda Qt plugin
+        run: |
+          git clone https://github.com/helloSystem/QtPlugin.git
+          cd QtPlugin
+          mkdir build && cd build
+          cmake ..
+          make -j$(nproc)
+          # Copy plugin into AppDir path
+          mkdir -p ../../build/AppDir/usr/lib/qt/plugins/platformthemes
+          cp panda.so ../../build/AppDir/usr/lib/qt/plugins/platformthemes/
+
+      - name: Build Menu project
         run: |
           mkdir -p build
           cd build
@@ -38,6 +49,7 @@ jobs:
           make -j$(nproc)
           make DESTDIR=AppDir install
 
+          # Ensure binary is in usr/bin for linuxdeployqt
           mkdir -p AppDir/usr/bin
           cp AppDir/System/Menu.app/Menu AppDir/usr/bin/Menu
 
@@ -46,18 +58,19 @@ jobs:
           mkdir -p build/AppDir/usr/share/applications
           mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
 
-          DESKTOP_FILE=build/AppDir/usr/share/applications/Menu.desktop
-          echo "[Desktop Entry]" >  "$DESKTOP_FILE"
-          echo "Type=Application" >> "$DESKTOP_FILE"
-          echo "Name=Menu" >> "$DESKTOP_FILE"
-          echo "Exec=Menu" >> "$DESKTOP_FILE"
-          echo "Icon=menu" >> "$DESKTOP_FILE"
-          echo "Comment=Menu application" >> "$DESKTOP_FILE"
-          echo "Categories=Utility;" >> "$DESKTOP_FILE"
-          echo "Terminal=false" >> "$DESKTOP_FILE"
+          cat > build/AppDir/usr/share/applications/Menu.desktop <<EOL
+[Desktop Entry]
+Type=Application
+Name=Menu
+Exec=Menu
+Icon=menu
+Comment=Menu application
+Categories=Utility;
+Terminal=false
+EOL
 
-          convert -size 256x256 xc:none \
-            build/AppDir/usr/share/icons/hicolor/256x256/apps/menu.png || true
+          # Placeholder icon
+          convert -size 256x256 xc:none build/AppDir/usr/share/icons/hicolor/256x256/apps/menu.png || true
 
       - name: Download linuxdeployqt
         run: |
@@ -69,6 +82,10 @@ jobs:
       - name: Create AppImage
         run: |
           cd build/AppDir
+          # Set environment variables so linuxdeployqt picks up panda plugin
+          export QT_QPA_PLATFORMTHEME=panda
+          export QT_QPA_PLATFORM=xcb
+          export QT_STYLE_OVERRIDE=fusion
           ../linuxdeployqt/linuxdeployqt-continuous-x86_64.AppImage \
             usr/share/applications/Menu.desktop \
             -appimage
