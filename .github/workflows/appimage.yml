@@ -18,38 +18,16 @@ jobs:
           sudo add-apt-repository universe
           sudo apt-get update
           sudo apt-get install -y \
-            cmake \
-            g++ \
-            qtbase5-dev \
-            qttools5-dev \
-            libqt5svg5-dev \
-            libqt5x11extras5-dev \
-            libkf5windowsystem-dev \
-            libkf5globalaccel-dev \
-            baloo-kf5-dev \
-            libxtst-dev \
-            libxdamage-dev \
-            libxcomposite-dev \
-            libxrender-dev \
-            libxcb1-dev \
-            libx11-xcb-dev \
-            libxcb-damage0-dev \
-            libxcb-util-dev \
-            libxcb-ewmh-dev \
-            libdbusmenu-qt5-dev \
-            libkf5dbusaddons-dev \
-            libpulse-dev \
-            libqalculate-dev \
-            qtdeclarative5-dev \
-            libprocps-dev \
-            make \
-            pkg-config \
-            libicu-dev \
-            wget \
-            patchelf \
-            file \
-            zip \
-            imagemagick
+            cmake g++ qtbase5-dev qttools5-dev \
+            libqt5svg5-dev libqt5x11extras5-dev \
+            libkf5windowsystem-dev libkf5globalaccel-dev \
+            baloo-kf5-dev libxtst-dev libxdamage-dev \
+            libxcomposite-dev libxrender-dev libxcb1-dev \
+            libx11-xcb-dev libxcb-damage0-dev libxcb-util-dev \
+            libxcb-ewmh-dev libdbusmenu-qt5-dev libkf5dbusaddons-dev \
+            libpulse-dev libqalculate-dev qtdeclarative5-dev \
+            libprocps-dev make pkg-config libicu-dev wget \
+            patchelf file zip imagemagick
 
       - name: Build project
         run: |
@@ -58,17 +36,16 @@ jobs:
           make -j$(nproc)
           make DESTDIR=AppDir install
 
-          # Move the built binary to AppDir/usr/bin so linuxdeployqt can find it
+          # Move the binary so linuxdeployqt can find it
           mkdir -p AppDir/usr/bin
           cp System/Menu.app/Menu AppDir/usr/bin/Menu
 
       - name: Create temporary .desktop file and icon
         run: |
-          # Create AppDir directories
           mkdir -p build/AppDir/usr/share/applications
           mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
 
-          # Create minimal Menu.desktop
+          # Minimal .desktop file (no leading spaces!)
           cat > build/AppDir/usr/share/applications/Menu.desktop <<EOL
 [Desktop Entry]
 Type=Application
@@ -80,7 +57,7 @@ Categories=Utility;
 Terminal=false
 EOL
 
-          # Create a blank placeholder icon
+          # Placeholder icon
           convert -size 256x256 xc:none build/AppDir/usr/share/icons/hicolor/256x256/apps/menu.png || true
 
       - name: Download linuxdeployqt
@@ -102,27 +79,3 @@ EOL
         with:
           name: Menu.AppImage
           path: build/AppDir/*.AppImage
-
-      - name: Create GitHub Release using Continuous Release Manager
-        if: github.event_name == 'push'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          curl -L -o continuous-release-manager-linux https://github.com/probonopd/continuous-release-manager/releases/download/continuous/continuous-release-manager-linux
-          chmod +x continuous-release-manager-linux
-          ./continuous-release-manager-linux
-          RELEASE_ID=$(./continuous-release-manager-linux)
-          echo "RELEASE_ID=${RELEASE_ID}" >> $GITHUB_ENV
-
-      - name: Upload AppImage to GitHub Release
-        if: github.event_name == 'push'
-        uses: xresloader/upload-to-github-release@v1.3.12
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          file: "build/AppDir/*.AppImage"
-          draft: false
-          verbose: true
-          branches: main
-          tag_name: continuous
-          release_id: ${{ env.RELEASE_ID }}
