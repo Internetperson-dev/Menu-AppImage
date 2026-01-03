@@ -33,57 +33,59 @@ jobs:
 
       - name: Build panda Qt plugin
         run: |
+          APPDIR="$HOME/Menu-AppImage/build/AppDir"
           git clone https://github.com/helloSystem/QtPlugin.git
           cd QtPlugin
           mkdir build && cd build
           cmake ..
           make -j$(nproc)
-          # Copy plugin into AppDir path for packaging
-          mkdir -p ../../build/AppDir/usr/lib/qt/plugins/platformthemes
-          cp libpanda-qtplugin.so ../../build/AppDir/usr/lib/qt/plugins/platformthemes/
-  
-          # Search for the shared library inside your build folder
-          PANDA_SO=$(find "$HOME/Menu-AppImage/QtPlugin/build" -name "libpanda-qtplugin.so" | head -n 1)
-          
+
+          # Create folder in AppDir for platformthemes plugin
+          mkdir -p "$APPDIR/usr/lib/qt/plugins/platformthemes"
+
+          # Find libpanda-qtplugin.so and copy it
+          PANDA_SO=$(find . -name "libpanda-qtplugin.so" | head -n 1)
           if [ -z "$PANDA_SO" ]; then
               echo "Error: libpanda-qtplugin.so not found!"
               exit 1
           else
               echo "Found libpanda-qtplugin.so at: $PANDA_SO"
-              cp "$PANDA_SO" "$APPDIR/usr/lib/qt5/plugins/platformthemes/"
+              cp "$PANDA_SO" "$APPDIR/usr/lib/qt/plugins/platformthemes/"
               echo "Copied libpanda-qtplugin.so to AppImage folder."
           fi
-          
 
       - name: Build Menu project
         run: |
+          APPDIR="$HOME/Menu-AppImage/build/AppDir"
           mkdir -p build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-          make DESTDIR=AppDir install
+          make DESTDIR="$APPDIR" install
 
           # Ensure binary is in usr/bin for linuxdeployqt
-          mkdir -p AppDir/usr/bin
-          cp AppDir/System/Menu.app/Menu AppDir/usr/bin/Menu
+          mkdir -p "$APPDIR/usr/bin"
+          cp "$APPDIR/System/Menu.app/Menu" "$APPDIR/usr/bin/Menu"
 
       - name: Create temporary .desktop file and icon
         run: |
-          mkdir -p build/AppDir/usr/share/applications
-          mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
+          APPDIR="$HOME/Menu-AppImage/build/AppDir"
+          mkdir -p "$APPDIR/usr/share/applications"
+          mkdir -p "$APPDIR/usr/share/icons/hicolor/256x256/apps"
 
-          # Create .desktop file using echo (avoids YAML heredoc issues)
-          echo "[Desktop Entry]" > build/AppDir/usr/share/applications/Menu.desktop
-          echo "Type=Application" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Name=Menu" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Exec=Menu" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Icon=menu" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Comment=Menu application" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Categories=Utility;" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Terminal=false" >> build/AppDir/usr/share/applications/Menu.desktop
+          # Create .desktop file
+          DESKTOP_FILE="$APPDIR/usr/share/applications/Menu.desktop"
+          echo "[Desktop Entry]" > "$DESKTOP_FILE"
+          echo "Type=Application" >> "$DESKTOP_FILE"
+          echo "Name=Menu" >> "$DESKTOP_FILE"
+          echo "Exec=Menu" >> "$DESKTOP_FILE"
+          echo "Icon=menu" >> "$DESKTOP_FILE"
+          echo "Comment=Menu application" >> "$DESKTOP_FILE"
+          echo "Categories=Utility;" >> "$DESKTOP_FILE"
+          echo "Terminal=false" >> "$DESKTOP_FILE"
 
           # Placeholder icon
-          convert -size 256x256 xc:none build/AppDir/usr/share/icons/hicolor/256x256/apps/menu.png || true
+          convert -size 256x256 xc:none "$APPDIR/usr/share/icons/hicolor/256x256/apps/menu.png" || true
 
       - name: Download linuxdeployqt
         run: |
@@ -94,11 +96,126 @@ jobs:
 
       - name: Create AppImage
         run: |
-          cd build/AppDir
+          APPDIR="$HOME/Menu-AppImage/build/AppDir"
+          cd "$APPDIR"
           # Set environment for panda plugin
           export QT_QPA_PLATFORMTHEME=panda
           export QT_QPA_PLATFORM=xcb
           export QT_STYLE_OVERRIDE=fusion
+
+          ../linuxdeployqt/linuxdeployqt-continuous-x86_64.AppImage \
+            usr/share/applications/Menu.desktop \
+            -appimage
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Menu.AppImage
+          path: build/AppDir/*.AppImagename: Build Menu AppImage
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo add-apt-repository universe
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake g++ qtbase5-dev qttools5-dev \
+            libqt5svg5-dev libqt5x11extras5-dev \
+            libkf5windowsystem-dev libkf5globalaccel-dev \
+            baloo-kf5-dev libxtst-dev libxdamage-dev \
+            libxcomposite-dev libxrender-dev libxcb1-dev \
+            libx11-xcb-dev libxcb-damage0-dev libxcb-util-dev \
+            libxcb-ewmh-dev libdbusmenu-qt5-dev libkf5dbusaddons-dev \
+            libpulse-dev libqalculate-dev qtdeclarative5-dev \
+            libprocps-dev make pkg-config libicu-dev wget git \
+            imagemagick zip patchelf libqt5xdgiconloader-dev qtbase5-private-dev extra-cmake-modules \
+            qtmultimedia5-dev
+
+      - name: Build panda Qt plugin
+        run: |
+          APPDIR="$HOME/Menu-AppImage/build/AppDir"
+          git clone https://github.com/helloSystem/QtPlugin.git
+          cd QtPlugin
+          mkdir build && cd build
+          cmake ..
+          make -j$(nproc)
+
+          # Create folder in AppDir for platformthemes plugin
+          mkdir -p "$APPDIR/usr/lib/qt/plugins/platformthemes"
+
+          # Find libpanda-qtplugin.so and copy it
+          PANDA_SO=$(find . -name "libpanda-qtplugin.so" | head -n 1)
+          if [ -z "$PANDA_SO" ]; then
+              echo "Error: libpanda-qtplugin.so not found!"
+              exit 1
+          else
+              echo "Found libpanda-qtplugin.so at: $PANDA_SO"
+              cp "$PANDA_SO" "$APPDIR/usr/lib/qt/plugins/platformthemes/"
+              echo "Copied libpanda-qtplugin.so to AppImage folder."
+          fi
+
+      - name: Build Menu project
+        run: |
+          APPDIR="$HOME/Menu-AppImage/build/AppDir"
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          make DESTDIR="$APPDIR" install
+
+          # Ensure binary is in usr/bin for linuxdeployqt
+          mkdir -p "$APPDIR/usr/bin"
+          cp "$APPDIR/System/Menu.app/Menu" "$APPDIR/usr/bin/Menu"
+
+      - name: Create temporary .desktop file and icon
+        run: |
+          APPDIR="$HOME/Menu-AppImage/build/AppDir"
+          mkdir -p "$APPDIR/usr/share/applications"
+          mkdir -p "$APPDIR/usr/share/icons/hicolor/256x256/apps"
+
+          # Create .desktop file
+          DESKTOP_FILE="$APPDIR/usr/share/applications/Menu.desktop"
+          echo "[Desktop Entry]" > "$DESKTOP_FILE"
+          echo "Type=Application" >> "$DESKTOP_FILE"
+          echo "Name=Menu" >> "$DESKTOP_FILE"
+          echo "Exec=Menu" >> "$DESKTOP_FILE"
+          echo "Icon=menu" >> "$DESKTOP_FILE"
+          echo "Comment=Menu application" >> "$DESKTOP_FILE"
+          echo "Categories=Utility;" >> "$DESKTOP_FILE"
+          echo "Terminal=false" >> "$DESKTOP_FILE"
+
+          # Placeholder icon
+          convert -size 256x256 xc:none "$APPDIR/usr/share/icons/hicolor/256x256/apps/menu.png" || true
+
+      - name: Download linuxdeployqt
+        run: |
+          mkdir -p build/linuxdeployqt
+          wget -O build/linuxdeployqt/linuxdeployqt-continuous-x86_64.AppImage \
+            https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod +x build/linuxdeployqt/linuxdeployqt-continuous-x86_64.AppImage
+
+      - name: Create AppImage
+        run: |
+          APPDIR="$HOME/Menu-AppImage/build/AppDir"
+          cd "$APPDIR"
+          # Set environment for panda plugin
+          export QT_QPA_PLATFORMTHEME=panda
+          export QT_QPA_PLATFORM=xcb
+          export QT_STYLE_OVERRIDE=fusion
+
           ../linuxdeployqt/linuxdeployqt-continuous-x86_64.AppImage \
             usr/share/applications/Menu.desktop \
             -appimage
