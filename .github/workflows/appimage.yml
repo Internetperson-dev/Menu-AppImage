@@ -58,21 +58,27 @@ jobs:
           make -j$(nproc)
           make DESTDIR=AppDir install
 
+          # Move the built binary to AppDir/usr/bin so linuxdeployqt can find it
+          mkdir -p AppDir/usr/bin
+          cp System/Menu.app/Menu AppDir/usr/bin/Menu
+
       - name: Create temporary .desktop file and icon
         run: |
           # Create AppDir directories
           mkdir -p build/AppDir/usr/share/applications
           mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
 
-          # Create minimal Menu.desktop using echo
-          echo "[Desktop Entry]" > build/AppDir/usr/share/applications/Menu.desktop
-          echo "Type=Application" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Name=Menu" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Exec=System/Menu.app/Menu" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Icon=menu" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Comment=Menu application" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Categories=Utility;" >> build/AppDir/usr/share/applications/Menu.desktop
-          echo "Terminal=false" >> build/AppDir/usr/share/applications/Menu.desktop
+          # Create minimal Menu.desktop
+          cat > build/AppDir/usr/share/applications/Menu.desktop <<EOL
+[Desktop Entry]
+Type=Application
+Name=Menu
+Exec=Menu
+Icon=menu
+Comment=Menu application
+Categories=Utility;
+Terminal=false
+EOL
 
           # Create a blank placeholder icon
           convert -size 256x256 xc:none build/AppDir/usr/share/icons/hicolor/256x256/apps/menu.png || true
