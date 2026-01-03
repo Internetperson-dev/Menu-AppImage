@@ -58,17 +58,15 @@ jobs:
           mkdir -p build/AppDir/usr/share/applications
           mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
 
-          # Minimal .desktop file (heredoc at column 0)
-          cat > build/AppDir/usr/share/applications/Menu.desktop << 'EOF'
-[Desktop Entry]
-Type=Application
-Name=Menu
-Exec=Menu
-Icon=menu
-Comment=Menu application
-Categories=Utility;
-Terminal=false
-EOF
+          # Create .desktop file using echo (avoids YAML heredoc issues)
+          echo "[Desktop Entry]" > build/AppDir/usr/share/applications/Menu.desktop
+          echo "Type=Application" >> build/AppDir/usr/share/applications/Menu.desktop
+          echo "Name=Menu" >> build/AppDir/usr/share/applications/Menu.desktop
+          echo "Exec=Menu" >> build/AppDir/usr/share/applications/Menu.desktop
+          echo "Icon=menu" >> build/AppDir/usr/share/applications/Menu.desktop
+          echo "Comment=Menu application" >> build/AppDir/usr/share/applications/Menu.desktop
+          echo "Categories=Utility;" >> build/AppDir/usr/share/applications/Menu.desktop
+          echo "Terminal=false" >> build/AppDir/usr/share/applications/Menu.desktop
 
           # Placeholder icon
           convert -size 256x256 xc:none build/AppDir/usr/share/icons/hicolor/256x256/apps/menu.png || true
