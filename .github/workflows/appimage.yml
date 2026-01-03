@@ -41,6 +41,19 @@ jobs:
           # Copy plugin into AppDir path for packaging
           mkdir -p ../../build/AppDir/usr/lib/qt/plugins/platformthemes
           cp libpanda-qtplugin.so ../../build/AppDir/usr/lib/qt/plugins/platformthemes/
+  
+          # Search for the shared library inside your build folder
+          PANDA_SO=$(find "$HOME/Menu-AppImage/QtPlugin/build" -name "libpanda-qtplugin.so" | head -n 1)
+          
+          if [ -z "$PANDA_SO" ]; then
+              echo "Error: libpanda-qtplugin.so not found!"
+              exit 1
+          else
+              echo "Found libpanda-qtplugin.so at: $PANDA_SO"
+              cp "$PANDA_SO" "$APPDIR/usr/lib/qt5/plugins/platformthemes/"
+              echo "Copied libpanda-qtplugin.so to AppImage folder."
+          fi
+          
 
       - name: Build Menu project
         run: |
